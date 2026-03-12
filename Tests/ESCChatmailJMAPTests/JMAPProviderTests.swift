@@ -87,6 +87,14 @@ struct JMAPProviderTests {
         #expect(requests[1].httpMethod == "POST")
         let requestBody = try decodedObject(from: requests[1].httpBody)
         #expect(requestBody?["using"] != nil)
+        let methodCalls = try #require(requestBody?["methodCalls"] as? [Any])
+        let firstCall = try #require(methodCalls.first as? [Any])
+        #expect(firstCall.count == 3)
+        #expect(firstCall[0] as? String == "Mailbox/get")
+        #expect((firstCall[1] as? [String: Any])?["accountId"] as? String == "A1")
+        #expect(firstCall[2] as? String == "mailboxes")
+        #expect(jsonString(requests[1].httpBody).contains("\"Mailbox/get\""))
+        #expect(!jsonString(requests[1].httpBody).contains("\\/"))
     }
 
     @Test

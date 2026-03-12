@@ -268,8 +268,10 @@ public actor JMAPProvider: MailProvider {
                 methodCalls: methodCalls
             )
         )
+        debugLog(request: request)
 
         let (data, response) = try await transport.send(request)
+        debugLog(response: response, data: data)
         try validate(response: response, data: data)
         return try decoder.decode(JMAPDTO.Response.self, from: data)
     }
@@ -347,7 +349,34 @@ public actor JMAPProvider: MailProvider {
     private var encoder: JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.withoutEscapingSlashes]
         return encoder
+    }
+
+    private func debugLog(request: URLRequest) {
+        guard isDebugHTTPEnabled else {
+            return
+        }
+
+        print("JMAP request: \(request.httpMethod ?? "UNKNOWN") \(request.url?.absoluteString ?? "nil")")
+        if let body = request.httpBody, let bodyString = String(data: body, encoding: .utf8) {
+            print(bodyString)
+        }
+    }
+
+    private func debugLog(response: HTTPURLResponse, data: Data) {
+        guard isDebugHTTPEnabled else {
+            return
+        }
+
+        print("JMAP response: HTTP \(response.statusCode) \(response.url?.absoluteString ?? "nil")")
+        if let bodyString = String(data: data, encoding: .utf8) {
+            print(bodyString)
+        }
+    }
+
+    private var isDebugHTTPEnabled: Bool {
+        ProcessInfo.processInfo.environment["ESC_JMAP_DEBUG_HTTP"] == "1"
     }
 }
 
